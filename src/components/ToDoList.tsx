@@ -1,57 +1,68 @@
-import { useRecoilState, useRecoilValue } from "recoil";
+import React from "react";
+import { useRecoilState } from "recoil";
 import styled from "styled-components";
-import { categoryState, toDoSelector, Categories } from "./atoms";
-import CreateToDo from "./CreateToDo";
-import ToDo from "./ToDo";
+import { ToDoListManager, toDoState } from "./atoms";
+import Category from "./Category";
 
 const Container = styled.div`
-  CreateToDo {
-    background-color: aqua;
+  height: 100vh;
+`;
+
+const Title = styled.div`
+  background-color: black;
+  font-size: 36px;
+  padding: 15px 0;
+
+  h1 {
+    padding: 0 15px;
   }
+`;
 
-  ul {
-    margin-top: 15px;
-  }
+const Categories = styled.div`
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: flex-start;
+  padding: 15px;
+  overflow-x: auto;
+  height: 90%;
+`;
 
-  li {
-    list-style-type: none;
-    border: 1px dotted;
-    border-radius: 5px;
-    padding: 5px 10px;
-    margin-bottom: 10px;
-    min-height: 50px;
-    max-width: 240px;
+const AddCategory = styled(Categories)`
+  flex: 0 0 auto;
+  background-color: gray;
+  border: 1px solid gray;
+  border-radius: 10px;
+  width: 260px;
+  height: 18px;
 
-    span {
-      display: flex;
-      flex-direction: row;
-      margin-bottom: 5px;
-    }
-
-    button {
-    }
+  &:hover {
+    cursor: pointer;
+    background-color: ${(props) => props.theme.bgColor};
   }
 `;
 
 function ToDoList() {
-  const toDos = useRecoilValue(toDoSelector);
-  const [category, setCategory] = useRecoilState(categoryState);
-  const onInput = (event: React.FormEvent<HTMLSelectElement>) => {
-    setCategory(event.currentTarget.value as any);
+  const [toDos, setToDos] = useRecoilState(toDoState);
+  const onAddCategoryClick = (event: React.MouseEvent<HTMLDivElement>) => {
+    const newCategory = prompt("Enter new category name");
+    if (newCategory && newCategory !== "") {
+      const manager = new ToDoListManager(toDos);
+      manager.addCategory(newCategory);
+      setToDos(manager.getList());
+    }
   };
   return (
     <Container>
-      <h1>To Dos</h1>
-      <hr />
-      <select value={category} onInput={onInput}>
-        <option value={Categories.TO_DO}>To Do</option>
-        <option value={Categories.DOING}>Doing</option>
-        <option value={Categories.DONE}>Done</option>
-      </select>
-      <CreateToDo />
-      {toDos?.map((toDo) => (
-        <ToDo key={toDo.id} {...toDo} />
-      ))}
+      <Title>
+        <h1>To Dos</h1>
+        <hr />
+      </Title>
+      <Categories>
+        {Object.keys(toDos).map((category) => (
+          <Category key={category} category={category} data={toDos[category]} />
+        ))}
+        <AddCategory onClick={onAddCategoryClick}>+ Add Category</AddCategory>
+      </Categories>
     </Container>
   );
 }

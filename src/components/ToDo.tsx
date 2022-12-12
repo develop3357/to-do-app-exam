@@ -1,51 +1,63 @@
-import { useSetRecoilState } from "recoil";
-import { Categories, IToDo, toDoState } from "./atoms";
+import { useRecoilState } from "recoil";
+import styled from "styled-components";
+import { IToDo, ToDoListManager, toDoState } from "./atoms";
 
-function ToDo({ text, category, id }: IToDo) {
-  const setToDos = useSetRecoilState(toDoState);
-  const onCategoryClick = (event: React.MouseEvent<HTMLButtonElement>) => {
-    const {
-      currentTarget: { name },
-    } = event;
-    setToDos((oldToDos) => {
-      const targetIndex = oldToDos.findIndex((toDo) => toDo.id === id);
-      const newToDo = { text, id, category: name as Categories };
-      return [
-        ...oldToDos.slice(0, targetIndex),
-        newToDo,
-        ...oldToDos.slice(targetIndex + 1),
-      ];
-    });
-  };
+const Container = styled.li`
+  border: 1px dotted whitesmoke;
+  border-radius: 10px;
+  margin: 10px 5px;
+  padding: 10px;
+  background-color: whitesmoke;
+  color: ${(props) => props.theme.bgColor};
+`;
+
+const Content = styled.div`
+  padding-bottom: 10px;
+  word-break: break-all;
+`;
+
+const Controls = styled.div`
+  display: flex;
+  justify-content: space-between;
+`;
+
+function ToDo({
+  text,
+  id,
+  category: toDoCategory,
+}: IToDo & { category: string }) {
+  const [toDos, setToDos] = useRecoilState(toDoState);
+  const manager = new ToDoListManager(toDos);
+  const categories = manager.getCategory();
   const onDeleteClick = (event: React.FormEvent<HTMLButtonElement>) => {
     setToDos((oldToDos) => {
-      const targetIndex = oldToDos.findIndex((toDo) => toDo.id === id);
-      return [
-        ...oldToDos.slice(0, targetIndex),
-        ...oldToDos.slice(targetIndex + 1),
-      ];
+      const manager = new ToDoListManager(oldToDos);
+      manager.remove(id);
+      return manager.getList();
+    });
+  };
+  const onCategoryChange = (event: React.MouseEvent<HTMLSelectElement>) => {
+    const toDo: IToDo = { id, text };
+    setToDos((oldToDos) => {
+      const manager = new ToDoListManager(oldToDos);
+      manager.move(toDo, event.currentTarget.value);
+      return manager.getList();
     });
   };
   return (
-    <li>
-      <span>{text}</span>
-      {category !== Categories.TO_DO && (
-        <button name={Categories.TO_DO} onClick={onCategoryClick}>
-          To Do
-        </button>
-      )}
-      {category !== Categories.DOING && (
-        <button name={Categories.DOING} onClick={onCategoryClick}>
-          Doing
-        </button>
-      )}
-      {category !== Categories.DONE && (
-        <button name={Categories.DONE} onClick={onCategoryClick}>
-          Done
-        </button>
-      )}
-      <button onClick={onDeleteClick}>🗑️</button>
-    </li>
+    <Container>
+      <Content>{text}</Content>
+      <Controls>
+        <select defaultValue={toDoCategory} onInput={onCategoryChange}>
+          {categories.map((category) => (
+            <option key={category} value={category}>
+              {category.length < 20 ? category : category.slice(0, 20) + "..."}
+            </option>
+          ))}
+        </select>
+        <button onClick={onDeleteClick}>🗑️</button>
+      </Controls>
+    </Container>
   );
 }
 
